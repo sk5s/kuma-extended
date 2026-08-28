@@ -95,17 +95,16 @@ The build emits a self-contained `dist/` that runs on any Node.js host with ESM 
 
 ### Run with Docker
 
-The repository does not ship a Dockerfile. A minimal image can be built from source:
+The repository ships a multi-stage `Dockerfile` (Node 22 Alpine, non-root `app` user, `tini` init, and a `/healthz` `HEALTHCHECK`). A prebuilt image is published to Docker Hub and can be pulled directly:
 
-```Dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-COPY dist ./dist
-EXPOSE 3000
-CMD ["node", "dist/index.js"]
+```bash
+docker run --rm -p 3000:3000 \
+  -e KUMA_BASE_URL=http://uptime-kuma:3001 \
+  -e KUMA_STATUS_PAGE_SLUG=default \
+  sk5sapp/kuma-extended:latest
 ```
+
+To build the image locally from source instead:
 
 ```bash
 docker build -t kuma-extended .
@@ -216,7 +215,7 @@ services:
       - "3001:3001"
 
   kuma-extended:
-    build: .
+    image: sk5sapp/kuma-extended:latest
     restart: unless-stopped
     depends_on:
       - uptime-kuma

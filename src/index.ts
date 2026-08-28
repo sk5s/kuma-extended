@@ -12,7 +12,8 @@ const app = new Hono()
 app.use(secureHeaders())
 
 if (config.allowedOrigin) {
-  app.use('/api/*', cors({ origin: config.allowedOrigin }))
+  const origins = config.allowedOrigin.split(',').map((o) => o.trim()).filter(Boolean)
+  app.use('/api/*', cors({ origin: origins.length === 1 ? origins[0] : origins }))
 }
 
 app.use('/api/v1/*', rateLimit(config.rateLimit))

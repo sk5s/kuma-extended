@@ -129,7 +129,7 @@ All configuration is via environment variables. Copy `.env.example` to `.env` to
 | `KUMA_STATUS_PAGE_SLUG` | `default` | Status page slug; must not contain `/`, `?`, `#`, or whitespace |
 | `CACHE_TTL_SECONDS` | `60` | TTL for cached Kuma responses |
 | `KUMA_TIMEOUT_MS` | `10000` | Timeout when calling Kuma |
-| `ALLOWED_ORIGIN` | _(empty)_ | CORS origin; empty disables CORS |
+| `ALLOWED_ORIGIN` | _(empty)_ | CORS origin(s); comma-separated for multiple (e.g. `https://a.com,https://b.com`). Empty disables CORS |
 | `RATE_LIMIT_PER_MINUTE` | `120` | Per-IP refill rate for the token bucket |
 | `RATE_LIMIT_BURST` | `20` | Token bucket capacity (burst ceiling) |
 

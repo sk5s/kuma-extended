@@ -29,7 +29,7 @@ npm start          # 執行 node dist/index.js
 | `KUMA_STATUS_PAGE_SLUG` | `default` | Kuma 狀態頁 slug;不可包含 `/ ? #` 或空白,啟動時驗證 |
 | `CACHE_TTL_SECONDS` | `60` | 對 Kuma 的請求快取時間(秒) |
 | `KUMA_TIMEOUT_MS` | `10000` | 呼叫 Kuma 的逾時(毫秒) |
-| `ALLOWED_ORIGIN` | _(空)_ | CORS 允許的來源;留空 = 不啟用 CORS(瀏覽器跨來源請求會被擋,App 不受影響) |
+| `ALLOWED_ORIGIN` | _(空)_ | CORS 允許的來源;逗號分隔可填多個(如 `https://a.com,https://b.com`);留空 = 不啟用 CORS(瀏覽器跨來源請求會被擋,App 不受影響) |
 | `RATE_LIMIT_PER_MINUTE` | `120` | `/api/v1/*` 每 IP 每分鐘 token-bucket refill 速率 |
 | `RATE_LIMIT_BURST` | `20` | token-bucket 容量(瞬時 burst 上限) |
 

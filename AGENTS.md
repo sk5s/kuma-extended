@@ -26,9 +26,12 @@ npm start          # 執行 node dist/index.js
 |---|---|---|
 | `PORT` | `3000` | Proxy 監聽埠 |
 | `KUMA_BASE_URL` | `http://localhost:3001` | Uptime Kuma 位址(結尾斜線會自動移除) |
-| `KUMA_STATUS_PAGE_SLUG` | `default` | Kuma 狀態頁 slug |
+| `KUMA_STATUS_PAGE_SLUG` | `default` | Kuma 狀態頁 slug;不可包含 `/ ? #` 或空白,啟動時驗證 |
 | `CACHE_TTL_SECONDS` | `60` | 對 Kuma 的請求快取時間(秒) |
 | `KUMA_TIMEOUT_MS` | `10000` | 呼叫 Kuma 的逾時(毫秒) |
+| `ALLOWED_ORIGIN` | _(空)_ | CORS 允許的來源;留空 = 不啟用 CORS(瀏覽器跨來源請求會被擋,App 不受影響) |
+| `RATE_LIMIT_PER_MINUTE` | `120` | `/api/v1/*` 每 IP 每分鐘 token-bucket refill 速率 |
+| `RATE_LIMIT_BURST` | `20` | token-bucket 容量(瞬時 burst 上限) |
 
 注意:此服務依賴 Kuma 的**公開** status page endpoint(`/api/status-page/:slug`),目標狀態頁必須已發布(published)。
 
@@ -36,11 +39,13 @@ npm start          # 執行 node dist/index.js
 
 ```
 src/
-├── index.ts            # 進入點:app 組裝、/healthz、錯誤處理、掛載 /api/v1
-├── config.ts           # 讀取 .env(自帶輕量解析,無 dotenv 依賴),匯出 config 物件
+├── index.ts            # 進入點:app 組裝、安全 middleware(secureHeaders + 可選 CORS + rate limit)、/healthz、錯誤處理、掛載 /api/v1
+├── config.ts           # 讀取 .env(自帶輕量解析,無 dotenv 依賴),匯出 config 物件;含 slug 驗證
 ├── types/kuma.ts       # Uptime Kuma status page 回應的型別(以實際 API 回應為準)
-├── kuma/client.ts      # Kuma API 客戶端(唯一與 Kuma 溝通的隔離層)+ KumaError + 連線狀態 kumaState
+├── kuma/client.ts      # Kuma API 客戶端(唯一與 Kuma 溝通的隔離層)+ KumaError + 連線狀態 kumaState;slug 經 encodeURIComponent
 ├── cache/memory.ts     # 泛型 TTL 記憶體快取(cacheGet / cacheSet / cacheClear)
+├── middleware/
+│   └── rateLimit.ts    # Token-bucket rate limit middleware(in-memory,per IP,key 來自 X-Forwarded-For / X-Real-IP)
 └── routes/
     └── v1/
         ├── index.ts    # v1 路由彙整
@@ -89,7 +94,16 @@ Proxy 健康檢查,附帶對 Kuma 的最近同步狀態(`lastSyncAt` / `lastErro
 ```
 
 - Kuma 連線失敗/逾時 → HTTP 504;Kuma 回應非 2xx → HTTP 502
+- Rate limit 超過 → HTTP 429(`RATE_LIMITED`),附 `Retry-After` header
 - 其餘未預期錯誤 → HTTP 500(`INTERNAL_ERROR`),詳細堆疊只記錄於 server log
+
+## 安全防護
+
+透過 Hono middleware 在 `index.ts` 集中掛載(順序由外而內):
+
+1. **`secureHeaders()`** — 全域套用,設定 `X-Content-Type-Options`、`X-Frame-Options`、`Strict-Transport-Security`、`Referrer-Policy` 等瀏覽器側防護 header。對 JSON API + App 為主的場景無實質攻擊面,但加上是業界慣例。
+2. **`cors()`** — 僅在 `ALLOWED_ORIGIN` 非空時掛在 `/api/*`;空字串 = 不啟用 CORS。手機 App 不受 CORS 影響(直接 HTTP request),只有瀏覽器跨來源網頁前端需設定。
+3. **`rateLimit()`** — token-bucket middleware 掛在 `/api/v1/*`,per IP(`X-Forwarded-For` 第一段 → `X-Real-IP` → `unknown`),in-memory,5 分鐘未使用自動清理。設計目的是防止 thundering-herd / 流量放大打到 Kuma;`/healthz` 不限流。
 
 ## 升級與擴充慣例(重要)
 
@@ -109,3 +123,4 @@ Proxy 健康檢查,附帶對 Kuma 的最近同步狀態(`lastSyncAt` / `lastErro
 - 程式碼不加註解;說明寫在本檔案
 - 錯誤處理:Kuma 相關錯誤丟 `KumaError`,由 `index.ts` 的 `app.onError` 統一轉換
 - 認證:目前無(純內網);若未來需要,在 `index.ts` 於 `/api` 掛載前加入 bearer/auth middleware
+- 安全 middleware(secureHeaders、CORS、rate limit)集中在 `index.ts`;如需新增更複雜的 middleware,放 `src/middleware/` 為獨立檔案再由 `index.ts` 引入掛載

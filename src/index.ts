@@ -1,10 +1,21 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import { config } from './config.js'
 import { KumaError, kumaState } from './kuma/client.js'
+import { rateLimit } from './middleware/rateLimit.js'
 import v1 from './routes/v1/index.js'
 
 const app = new Hono()
+
+app.use(secureHeaders())
+
+if (config.allowedOrigin) {
+  app.use('/api/*', cors({ origin: config.allowedOrigin }))
+}
+
+app.use('/api/v1/*', rateLimit(config.rateLimit))
 
 app.onError((err, c) => {
   if (err instanceof KumaError) {

@@ -22,7 +22,7 @@ export const kumaState: KumaClientState = {
 }
 
 export async function fetchStatusPage(): Promise<KumaStatusPage> {
-  const url = `${config.kumaBaseUrl}/api/status-page/${config.statusPageSlug}`
+  const url = `${config.kumaBaseUrl}/api/status-page/${encodeURIComponent(config.statusPageSlug)}`
   let res: Response
   try {
     res = await fetch(url, { signal: AbortSignal.timeout(config.kumaTimeoutMs) })

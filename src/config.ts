@@ -30,10 +30,20 @@ function withDefault(name: string, fallback: string): string {
   return process.env[name] ?? fallback
 }
 
+const rawSlug = withDefault('KUMA_STATUS_PAGE_SLUG', 'default')
+if (!rawSlug || /[\/?#\s]/.test(rawSlug)) {
+  throw new Error(`Invalid KUMA_STATUS_PAGE_SLUG: ${JSON.stringify(rawSlug)}`)
+}
+
 export const config = {
   port: Number(withDefault('PORT', '3000')),
   kumaBaseUrl: withDefault('KUMA_BASE_URL', 'http://localhost:3001').replace(/\/+$/, ''),
-  statusPageSlug: withDefault('KUMA_STATUS_PAGE_SLUG', 'default'),
+  statusPageSlug: rawSlug,
   cacheTtlMs: Number(withDefault('CACHE_TTL_SECONDS', '60')) * 1000,
-  kumaTimeoutMs: Number(withDefault('KUMA_TIMEOUT_MS', '10000'))
+  kumaTimeoutMs: Number(withDefault('KUMA_TIMEOUT_MS', '10000')),
+  allowedOrigin: withDefault('ALLOWED_ORIGIN', ''),
+  rateLimit: {
+    perMinute: Number(withDefault('RATE_LIMIT_PER_MINUTE', '120')),
+    burst: Number(withDefault('RATE_LIMIT_BURST', '20'))
+  }
 } as const

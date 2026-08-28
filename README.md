@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.jpg" alt="kuma-extended logo" width="160" />
+</p>
+
 # kuma-extended
 
 A small, focused API proxy that turns a published [Uptime Kuma](https://github.com/louislam/uptime-kuma) status page into a stable, cacheable JSON API for web and mobile clients.

@@ -10,6 +10,7 @@ RUN npm ci
 
 FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
+COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY tsconfig.json ./
 COPY src ./src
